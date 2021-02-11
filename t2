@@ -46,11 +46,10 @@ for i in range(0,dim1):
     labels_train[i*10:i*10+10] = i
     labels_test[i*3:i*3+3] = i
 
-########################################
-### Architecture #1 Feed-forward NN ####
-########################################
 
-#model Feed-Forward
+#Mode 1: Feed-forward NN 
+############
+
 shapedim = (48,40)
 inputs = KL.Input(shape=shapedim)
 l = KL.Flatten()(inputs)
@@ -64,11 +63,9 @@ test_loss, test_acc = model.evaluate(testpose, labels_test)
 print("FF Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 
 
-############################
-### Architecture #2 CNN ####
-############################
+#Mode 2: CNN 
+############
 
-#CNN
 inputs_C = KL.Input(shape=(48,40, 1))
 c = KL.Conv2D(512, (3,3), padding = "valid", activation = tf.nn.relu)(inputs_C)
 m = KL.MaxPool2D((3,3), (3,3))(c)
@@ -81,11 +78,10 @@ model_C.fit(trainpose_C,labels_train, epochs=epochcount)#problem
 test_loss, test_acc = model_C.evaluate(testpose_C, labels_test)
 print("CNN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 
-############################
-### Architecture #3 RNN ####
-############################
 
-#RNN
+#Mode 1: RNN
+############
+
 inputs_RNN = KL.Input(shape=shapedim)
 x = KL.SimpleRNN(512, activation="sigmoid")(inputs_RNN)
 outputs_RNN = KL.Dense(512, activation="softmax")(x)
@@ -98,14 +94,21 @@ print("RRN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 
 
 
-
-
-### MNIST
+########################################################
 ########################################################
 
-############################
-### Architecture #1 CNN ####
-############################
+# ----------------- MNIST  ----------------- 
+########################################################
+########################################################
+
+
+
+
+
+
+#Mode 1: CNN 
+############
+
 
 # example of loading the mnist dataset
 from keras.datasets import mnist
@@ -448,9 +451,9 @@ def run_test_harness():
 run_test_harness()
 
 
-########################################
-### Architecture #2 Feed-forward NN ####
-########################################
+#Mode 2: Feed-forward NN 
+############
+
 import keras
 import numpy as np
 import pandas as pd 
@@ -475,9 +478,9 @@ classifier.compile(optimizer ='adam',loss='binary_crossentropy', metrics =['accu
 classifier.fit(X_train,yt, batch_size=10, epochs=20)
 
 
-#################################################
-### Architecture #3 Recurrent Neural Network ####
-#################################################
+#Mode 3: RNN 
+############
+
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/")
 
