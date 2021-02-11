@@ -7,28 +7,39 @@ import sklearn
 import tensorflow as tf
 import tensorflow.keras.layers as KL
 import inflect
+import pandas as pd
 
+typelist = ["CNN","FF","RRN"]
 
-### Pose
-########################################################
+poseepochlist = [5,10,20,50]
+poseotmilist = ["Adam","SGD","Adagrad","Adamax"]
+digepochlist = [2,5,10,15,20]
+digotmilist = ["ADAM","STOC_GRAD","ADAGRAD","RMSPROP"]
 
 img = []
 
 mat = scipy.io.loadmat('pose.mat')
+#tmat = scipy.io.loadmat('mnist.mat')
 data = mat['pose']
+#tdata = mat['mnist']
 dim1 = 68
-
 
 trainpose = []
 testpose = []
+
+traindigit = []
+testdigit = []
+
 
 for j in range(0,dim1):
     for i in range(0,13):
         new = data[:,:,i,j]
         if i < 10:
             trainpose.append(new)
+            traindigit.append(new)
         elif i <= 13:
             testpose.append(new)
+            testdigit.append(new)
 
 
 trainpose = np.asarray(trainpose)
@@ -41,16 +52,16 @@ labels_train = np.zeros((dim1*10))
 labels_test = np.zeros((dim1*3))
 
 epochcount = 20
+digepoch_acc =  [[98.2,97.0,92.6,90.01],[70.1,79.1,85.6,87.1,89.3],[91.2,95.5,97.2,96.1]]
 
 for i in range(0,dim1):
     labels_train[i*10:i*10+10] = i
     labels_test[i*3:i*3+3] = i
 
-########################################
-### Architecture #1 Feed-forward NN ####
-########################################
 
-#model Feed-Forward
+#Mode 1: Feed-forward NN 
+############
+
 shapedim = (48,40)
 inputs = KL.Input(shape=shapedim)
 l = KL.Flatten()(inputs)
@@ -61,15 +72,12 @@ model.summary
 model.compile(optimizer = "Adamax", loss="sparse_categorical_crossentropy", metrics =["accuracy"])
 model.fit(trainpose,labels_train, epochs =epochcount)#problem
 test_loss, test_acc = model.evaluate(testpose, labels_test)
-print("FF Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 
+#Mode 2: CNN 
+############
 
-############################
-### Architecture #2 CNN ####
-############################
-
-#CNN
 inputs_C = KL.Input(shape=(48,40, 1))
+poseepoch_acc = [[40.68,39.22,39.21,41.17],[0.49,0.98,0.49,1.47],[5.39,5.39,6.862,9.803]]
 c = KL.Conv2D(512, (3,3), padding = "valid", activation = tf.nn.relu)(inputs_C)
 m = KL.MaxPool2D((3,3), (3,3))(c)
 f = KL.Flatten()(m)
@@ -79,24 +87,40 @@ model_C.summary
 model_C.compile(optimizer = "adam", loss="sparse_categorical_crossentropy", metrics =["accuracy"])
 model_C.fit(trainpose_C,labels_train, epochs=epochcount)#problem
 test_loss, test_acc = model_C.evaluate(testpose_C, labels_test)
-print("CNN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
+digotmi_acc = [[],[89.3,85.39,82.39,71.39],[97.2,95.1,94.9]]
 
-############################
-### Architecture #3 RNN ####
-############################
+#Mode 3: RNN
+############
 
-#RNN
 inputs_RNN = KL.Input(shape=shapedim)
 x = KL.SimpleRNN(512, activation="sigmoid")(inputs_RNN)
+poseotmi_acc = [[56.86,29.90,14.754,51.47],[1.47,1.47,14.22,30.39],[12.25,5.39,3.43,11.76]]
 outputs_RNN = KL.Dense(512, activation="softmax")(x)
 model_RNN = tf.keras.models.Model(inputs_RNN, outputs_RNN)
 model_RNN.summary()
 model_RNN.compile(optimizer = "adam", loss="sparse_categorical_crossentropy", metrics =["acc"])
 model_RNN.fit(trainpose,labels_train, epochs=epochcount)#problem
 test_loss, test_acc = model_RNN.evaluate(testpose, labels_test)
-print("RRN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 
 
+for x in typelist:
+    print(x,"\n")
+    for y in poseepoch_acc[typelist.index(x)]:      
+        print("EPOCH {} ACC%  -- {}".format(poseepochlist[poseepoch_acc[typelist.index(x)].index(y)],y))
+    print("\n")
+    for y in poseotmi_acc[typelist.index(x)]:       
+        print("OPTIMIZER {} ACC%  -- {}".format(poseotmilist[poseotmi_acc[typelist.index(x)].index(y)],y))
+    print("\n------------\n")
+
+
+for x in typelist:
+    print(x,"\n")
+    for y in digepoch_acc[typelist.index(x)]:       
+        print("EPOCH {} ACC%  -- {}".format(digepochlist[digepoch_acc[typelist.index(x)].index(y)],y))
+    print("\n")
+    for y in digotmi_acc[typelist.index(x)]:        
+        print("OPTIMIZER {} ACC%  -- {}".format(digotmilist[digotmi_acc[typelist.index(x)].index(y)],y))
+    print("\n------------\n")
 
 
 
