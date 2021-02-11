@@ -550,4 +550,4 @@ with tf.Session() as sess:
             epoch + 1, loss_train, acc_train))
     loss_test, acc_test = sess.run(
         [loss, accuracy], feed_dict={X: X_test, y: y_test})
-    print('Test Loss: {:.3f}, Test Acc: {:.3f}'.format(loss_test, acc_test))'''
+    print('Test Loss: {:.3f}, Test Acc: {:.3f}'.format(loss_test, acc_test))
