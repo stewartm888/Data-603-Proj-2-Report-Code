@@ -54,45 +54,6 @@ Adagrad	3.431%
 Adamax	11.76%
 
 
-###DIGIT CNN
-EPOCHS
-2		98.2%
-5		97.0%
-10		92.6%
-15		90.01%
-
-
-###DIGIT FF
-EPOCHS
-2		70.1%
-5		79.1%
-10		85.6%
-15		87.1%
-20		89.3%
-
-
-OPTIMIZER
-Adam		89.3%
-Stoc Gradient	85.39%
-Adagrad	82.39%
-RMSprop	71.39%
-
-
-###DIGIT RNN
-2		91.2%
-5		95.5%
-10		97.2%
-15		96.1%
-
-
-OPTIMIZER
-Adam		97.2%
-Stoc Gradient	95.1%
-Adagrad	94.9%
-
-
-
-
 
 
 
@@ -187,6 +148,15 @@ print("RRN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 
 
 from keras.datasets import mnist
+epochlist = [2,5,10,15,20]
+optimizerlist = ["ADAM","STOC_GRAD","ADAGRAD","RMSPROP"]
+cnn_epoch_acc =  [98.2,97.0,92.6,90.01]
+ff_epoch_acc = [70.1,79.1,85.6,87.1,89.3]
+ff_otmi_acc = [89.3,85.39,82.39,71.39]
+rr_epoch_acc = [91.2,95.5,97.2,96.1]
+rr_otmi_acc = [97.2,95.1,94.9]
+
+
 
 
 
