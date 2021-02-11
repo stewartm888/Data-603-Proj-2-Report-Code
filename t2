@@ -12,6 +12,48 @@ import inflect
 ### Pose
 ########################################################
 
+###POSE FF
+EPOCHS
+5		.49019%
+10		.98039%
+20		.490196%
+50		1.470%
+
+OPTIMIZER
+Adam		1.470%
+SGD		1.470%
+Adagrad	14.215%
+Adamax	30.39%
+
+
+###POSE CNN
+EPOCHS
+5		40.68%
+10		39.22%
+20		39.21%
+50		41.17%
+
+OPTIMIZER
+Adam		56.86%
+SGD		29.90%
+Adagrad	14.754%
+Adamax	51.47%
+
+
+###POSE RNN
+EPOCHS
+5		5.39%
+10		5.39%
+20		6.862%
+50		9.803%
+
+OPTIMIZER
+Adam		12.25%
+SGD		5.392%
+Adagrad	3.431%
+Adamax	11.76%
+
+
 img = []
 
 mat = scipy.io.loadmat('pose.mat')
