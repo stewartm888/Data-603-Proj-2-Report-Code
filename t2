@@ -102,7 +102,7 @@ print("RRN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 ########################################################
 
 
-
+from keras.datasets import mnist
 
 
 
@@ -110,9 +110,6 @@ print("RRN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 ############
 
 
-# example of loading the mnist dataset
-from keras.datasets import mnist
-from matplotlib import pyplot
 # load dataset
 (trainX, trainy), (testX, testy) = mnist.load_data()
 # summarize loaded dataset
@@ -121,11 +118,11 @@ print('Test: X=%s, y=%s' % (testX.shape, testy.shape))
 # plot first few images
 for i in range(9):
     # define subplot
-    pyplot.subplot(330 + 1 + i)
+    plt.subplot(330 + 1 + i)
     # plot raw pixel data
-    pyplot.imshow(trainX[i], cmap=pyplot.get_cmap('gray'))
+    plt.imshow(trainX[i], cmap=plt.get_cmap('gray'))
 # show the figure
-pyplot.show()
+plt.show()
 
 # record model performance on a validation dataset during training
 history = model.fit(..., validation_data=(valX, valY))
@@ -268,31 +265,31 @@ def evaluate_model(dataX, dataY, n_folds=5):
 def summarize_diagnostics(histories):
     for i in range(len(histories)):
         # plot loss
-        pyplot.subplot(2, 1, 1)
-        pyplot.title('Cross Entropy Loss')
-        pyplot.plot(histories[i].history['loss'], color='blue', label='train')
-        pyplot.plot(histories[i].history['val_loss'], color='orange', label='test')
+        plt.subplot(2, 1, 1)
+        plt.title('Cross Entropy Loss')
+        plt.plot(histories[i].history['loss'], color='blue', label='train')
+        plt.plot(histories[i].history['val_loss'], color='orange', label='test')
         # plot accuracy
-        pyplot.subplot(2, 1, 2)
-        pyplot.title('Classification Accuracy')
-        pyplot.plot(histories[i].history['accuracy'], color='blue', label='train')
-        pyplot.plot(histories[i].history['val_accuracy'], color='orange', label='test')
-    pyplot.show()
+        plt.subplot(2, 1, 2)
+        plt.title('Classification Accuracy')
+        plt.plot(histories[i].history['accuracy'], color='blue', label='train')
+        plt.plot(histories[i].history['val_accuracy'], color='orange', label='test')
+    plt.show()
 
 # plot diagnostic learning curves
 def summarize_diagnostics(histories):
     for i in range(len(histories)):
         # plot loss
-        pyplot.subplot(2, 1, 1)
-        pyplot.title('Cross Entropy Loss')
-        pyplot.plot(histories[i].history['loss'], color='blue', label='train')
-        pyplot.plot(histories[i].history['val_loss'], color='orange', label='test')
+        plt.subplot(2, 1, 1)
+        plt.title('Cross Entropy Loss')
+        plt.plot(histories[i].history['loss'], color='blue', label='train')
+        plt.plot(histories[i].history['val_loss'], color='orange', label='test')
         # plot accuracy
-        pyplot.subplot(2, 1, 2)
-        pyplot.title('Classification Accuracy')
-        pyplot.plot(histories[i].history['accuracy'], color='blue', label='train')
-        pyplot.plot(histories[i].history['val_accuracy'], color='orange', label='test')
-    pyplot.show()
+        plt.subplot(2, 1, 2)
+        plt.title('Classification Accuracy')
+        plt.plot(histories[i].history['accuracy'], color='blue', label='train')
+        plt.plot(histories[i].history['val_accuracy'], color='orange', label='test')
+    plt.show()
     
 
 
