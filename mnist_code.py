@@ -23,6 +23,7 @@ mat = scipy.io.loadmat('pose.mat')
 data = mat['pose']
 #tdata = mat['mnist']
 dim1 = 68
+poseotmi_acc = [[56.86,29.90,14.754,51.47],[1.47,1.47,14.22,30.39],[12.25,5.39,3.43,11.76]]
 
 trainpose = []
 testpose = []
@@ -52,7 +53,6 @@ labels_train = np.zeros((dim1*10))
 labels_test = np.zeros((dim1*3))
 
 epochcount = 20
-digepoch_acc =  [[98.2,97.0,92.6,90.01],[70.1,79.1,85.6,87.1,89.3],[91.2,95.5,97.2,96.1]]
 
 for i in range(0,dim1):
     labels_train[i*10:i*10+10] = i
@@ -73,6 +73,7 @@ model.compile(optimizer = "Adamax", loss="sparse_categorical_crossentropy", metr
 model.fit(trainpose,labels_train, epochs =epochcount)#problem
 test_loss, test_acc = model.evaluate(testpose, labels_test)
 
+
 #Mode 2: CNN 
 ############
 
@@ -82,19 +83,19 @@ c = KL.Conv2D(512, (3,3), padding = "valid", activation = tf.nn.relu)(inputs_C)
 m = KL.MaxPool2D((3,3), (3,3))(c)
 f = KL.Flatten()(m)
 outputs_C = KL.Dense(dim1,activation=tf.nn.softmax)(f)
+
 model_C = tf.keras.models.Model(inputs_C,outputs_C)
 model_C.summary
 model_C.compile(optimizer = "adam", loss="sparse_categorical_crossentropy", metrics =["accuracy"])
 model_C.fit(trainpose_C,labels_train, epochs=epochcount)#problem
 test_loss, test_acc = model_C.evaluate(testpose_C, labels_test)
-digotmi_acc = [[],[89.3,85.39,82.39,71.39],[97.2,95.1,94.9]]
+
 
 #Mode 3: RNN
 ############
 
 inputs_RNN = KL.Input(shape=shapedim)
 x = KL.SimpleRNN(512, activation="sigmoid")(inputs_RNN)
-poseotmi_acc = [[56.86,29.90,14.754,51.47],[1.47,1.47,14.22,30.39],[12.25,5.39,3.43,11.76]]
 outputs_RNN = KL.Dense(512, activation="softmax")(x)
 model_RNN = tf.keras.models.Model(inputs_RNN, outputs_RNN)
 model_RNN.summary()
@@ -103,24 +104,6 @@ model_RNN.fit(trainpose,labels_train, epochs=epochcount)#problem
 test_loss, test_acc = model_RNN.evaluate(testpose, labels_test)
 
 
-for x in typelist:
-    print(x,"\n")
-    for y in poseepoch_acc[typelist.index(x)]:      
-        print("EPOCH {} ACC%  -- {}".format(poseepochlist[poseepoch_acc[typelist.index(x)].index(y)],y))
-    print("\n")
-    for y in poseotmi_acc[typelist.index(x)]:       
-        print("OPTIMIZER {} ACC%  -- {}".format(poseotmilist[poseotmi_acc[typelist.index(x)].index(y)],y))
-    print("\n------------\n")
-
-
-for x in typelist:
-    print(x,"\n")
-    for y in digepoch_acc[typelist.index(x)]:       
-        print("EPOCH {} ACC%  -- {}".format(digepochlist[digepoch_acc[typelist.index(x)].index(y)],y))
-    print("\n")
-    for y in digotmi_acc[typelist.index(x)]:        
-        print("OPTIMIZER {} ACC%  -- {}".format(digotmilist[digotmi_acc[typelist.index(x)].index(y)],y))
-    print("\n------------\n")
 
 ########################################################
 ########################################################
@@ -129,64 +112,18 @@ for x in typelist:
 ########################################################
 ########################################################
 
-
-from keras.datasets import mnist
 epochlist = [2,5,10,15,20]
 otmilist = ["ADAM","STOC_GRAD","ADAGRAD","RMSPROP"]
 typelist = ["CNN","FF","RRN"]
 
-
-
-
 #Mode 1: CNN 
 ############
-
-
-# load dataset
-(trainX, trainy), (testX, testy) = mnist.load_data()
-# summarize loaded dataset
-print('Train: X=%s, y=%s' % (trainX.shape, trainy.shape))
-print('Test: X=%s, y=%s' % (testX.shape, testy.shape))
-# plot first few images
-for i in range(9):
-    # define subplot
-    plt.subplot(330 + 1 + i)
-    # plot raw pixel data
-    plt.imshow(trainX[i], cmap=plt.get_cmap('gray'))
-# show the figure
-plt.show()
-
-# record model performance on a validation dataset during training
-history = model.fit(..., validation_data=(valX, valY))
-
-# example of k-fold cv for a neural net
-data = ...
-
-# load dataset
-(trainX, trainY), (testX, testY) = mnist.load_data()
-# reshape dataset to have a single channel
-trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
-testX = testX.reshape((testX.shape[0], 28, 28, 1))
-# load dataset
-(trainX, trainY), (testX, testY) = mnist.load_data()
-# reshape dataset to have a single channel
-trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
-testX = testX.reshape((testX.shape[0], 28, 28, 1))
-
-
-# one hot encode target values
-trainY = to_categorical(trainY)
-testY = to_categorical(testY)
-
-# one hot encode target values
-trainY = to_categorical(trainY)
-testY = to_categorical(testY)
-
-
 # load train and test dataset
+digepoch_acc =  [[98.2,97.0,92.6,90.01],
+[70.1,79.1,85.6,87.1,89.3],[91.2,95.5,97.2,96.1]]
 def load_dataset():
     # load dataset
-    (trainX, trainY), (testX, testY) = mnist.load_data()
+    (trainX, trainY), (testX, testY) = (2,1)(2,3)
     # reshape dataset to have a single channel
     trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
     testX = testX.reshape((testX.shape[0], 28, 28, 1))
@@ -196,6 +133,8 @@ def load_dataset():
     return trainX, trainY, testX, testY
 
 # define cnn model
+digotmi_acc = [[],[89.3,85.39,82.39,71.39],
+[97.2,95.1,94.9]]
 def define_model():
     model = Sequential()
     model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
@@ -234,6 +173,65 @@ def run_test_harness():
     # learning curves
     summarize_diagnostics(histories)
     # summarize estimated performance
+
+input("Press for POSE")
+for x in typelist:
+    print("POSE",x,"\n")
+    for y in poseepoch_acc[typelist.index(x)]:      
+        print("EPOCH {} ACC%  -- {}".format(poseepochlist[poseepoch_acc[typelist.index(x)].index(y)],y))
+    print("\n")
+    for y in poseotmi_acc[typelist.index(x)]:       
+        print("OPTIMIZER {} ACC%  -- {}".format(poseotmilist[poseotmi_acc[typelist.index(x)].index(y)],y))
+    print("\n------------\n")
+input("Press for MNIST")
+for x in typelist:
+    print("MNIST", x,"\n")
+    for y in poseepoch_acc[typelist.index(x)]:      
+        print("EPOCH {} ACC%  -- {}".format(poseepochlist[poseepoch_acc[typelist.index(x)].index(y)],y))
+    print("\n")
+    for y in poseotmi_acc[typelist.index(x)]:       
+        print("OPTIMIZER {} ACC%  -- {}".format(poseotmilist[poseotmi_acc[typelist.index(x)].index(y)],y))
+    print("\n------------\n")
+
+# load dataset
+(trainX, trainy), (testX, testy) = mnist.load_data()
+# summarize loaded dataset
+print('Train: X=%s, y=%s' % (trainX.shape, trainy.shape))
+print('Test: X=%s, y=%s' % (testX.shape, testy.shape))
+# plot first few images
+for i in range(9):
+    # define subplot
+    plt.subplot(330 + 1 + i)
+    # plot raw pixel data
+    plt.imshow(trainX[i], cmap=plt.get_cmap('gray'))
+# show the figure
+# record model performance on a validation dataset during training
+history = model.fit(..., validation_data=(valX, valY))
+
+# example of k-fold cv for a neural net
+data = ...
+
+# load dataset
+(trainX, trainY), (testX, testY) = mnist.load_data()
+# reshape dataset to have a single channel
+trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+testX = testX.reshape((testX.shape[0], 28, 28, 1))
+# load dataset
+(trainX, trainY), (testX, testY) = mnist.load_data()
+# reshape dataset to have a single channel
+trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+testX = testX.reshape((testX.shape[0], 28, 28, 1))
+
+
+# one hot encode target values
+trainY = to_categorical(trainY)
+testY = to_categorical(testY)
+
+# one hot encode target values
+trainY = to_categorical(trainY)
+testY = to_categorical(testY)
+
+
 
 
 #Mode 2: Feed-forward NN 
@@ -292,7 +290,7 @@ accuracy = tf.reduce_mean(tf.cast(prediction, tf.float32))
 
 # input data
 from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets(“MNIST_data/”)
+#mnist = input_data.read_data_sets(“MNIST_data/”)
 X_test = mnist.test.images # X_test shape: [num_test, 28*28]
 X_test = X_test.reshape([-1, n_steps, n_inputs])
 y_test = mnist.test.labels
@@ -310,3 +308,5 @@ with tf.Session() as sess:
             sess.run(optimizer, feed_dict={X: X_train, y: y_train})
         loss_train, acc_train = sess.run(
             [loss, accuracy], feed_dict={X: X_train, y: y_train})
+
+
