@@ -54,6 +54,48 @@ Adagrad	3.431%
 Adamax	11.76%
 
 
+###DIGIT CNN
+EPOCHS
+2		98.2%
+5		97.0%
+10		92.6%
+15		90.01%
+
+
+###DIGIT FF
+EPOCHS
+2		70.1%
+5		79.1%
+10		85.6%
+15		87.1%
+20		89.3%
+
+
+OPTIMIZER
+Adam		89.3%
+Stoc Gradient	85.39%
+Adagrad	82.39%
+RMSprop	71.39%
+
+
+###DIGIT RNN
+2		91.2%
+5		95.5%
+10		97.2%
+15		96.1%
+
+
+OPTIMIZER
+Adam		97.2%
+Stoc Gradient	95.1%
+Adagrad	94.9%
+
+
+
+
+
+
+
 img = []
 
 mat = scipy.io.loadmat('pose.mat')
