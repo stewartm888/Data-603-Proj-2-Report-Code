@@ -148,13 +148,16 @@ print("RRN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
 
 
 from keras.datasets import mnist
+typelist = ["CNN","FF","RRN"]
 epochlist = [2,5,10,15,20]
 optimizerlist = ["ADAM","STOC_GRAD","ADAGRAD","RMSPROP"]
 cnn_epoch_acc =  [98.2,97.0,92.6,90.01]
+cnn_otmi_acc = []
 ff_epoch_acc = [70.1,79.1,85.6,87.1,89.3]
 ff_otmi_acc = [89.3,85.39,82.39,71.39]
 rr_epoch_acc = [91.2,95.5,97.2,96.1]
 rr_otmi_acc = [97.2,95.1,94.9]
+
 
 
 
