@@ -1,0 +1,529 @@
+import scipy.io
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+from sklearn import svm as hi
+import sklearn
+import tensorflow as tf
+import tensorflow.keras.layers as KL
+import inflect
+
+
+### Pose
+########################################################
+
+img = []
+
+mat = scipy.io.loadmat('pose.mat')
+data = mat['pose']
+dim1 = 68
+
+
+trainpose = []
+testpose = []
+
+for j in range(0,dim1):
+    for i in range(0,13):
+        new = data[:,:,i,j]
+        if i < 10:
+            trainpose.append(new)
+        elif i <= 13:
+            testpose.append(new)
+
+
+trainpose = np.asarray(trainpose)
+testpose = np.asarray(testpose)
+trainpose_C = np.expand_dims(trainpose, axis = -1)
+testpose_C = np.expand_dims(testpose, axis = -1)
+
+
+labels_train = np.zeros((dim1*10))
+labels_test = np.zeros((dim1*3))
+
+epochcount = 20
+
+for i in range(0,dim1):
+    labels_train[i*10:i*10+10] = i
+    labels_test[i*3:i*3+3] = i
+
+########################################
+### Architecture #1 Feed-forward NN ####
+########################################
+
+#model Feed-Forward
+shapedim = (48,40)
+inputs = KL.Input(shape=shapedim)
+l = KL.Flatten()(inputs)
+l = KL.Dense(512, activation=tf.nn.relu)(l)
+outputs = KL.Dense(256,activation=tf.nn.softmax)(l)
+model = tf.keras.models.Model(inputs,outputs)
+model.summary
+model.compile(optimizer = "Adamax", loss="sparse_categorical_crossentropy", metrics =["accuracy"])
+model.fit(trainpose,labels_train, epochs =epochcount)#problem
+test_loss, test_acc = model.evaluate(testpose, labels_test)
+print("FF Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
+
+
+############################
+### Architecture #2 CNN ####
+############################
+
+#CNN
+inputs_C = KL.Input(shape=(48,40, 1))
+c = KL.Conv2D(512, (3,3), padding = "valid", activation = tf.nn.relu)(inputs_C)
+m = KL.MaxPool2D((3,3), (3,3))(c)
+f = KL.Flatten()(m)
+outputs_C = KL.Dense(dim1,activation=tf.nn.softmax)(f)
+model_C = tf.keras.models.Model(inputs_C,outputs_C)
+model_C.summary
+model_C.compile(optimizer = "adam", loss="sparse_categorical_crossentropy", metrics =["accuracy"])
+model_C.fit(trainpose_C,labels_train, epochs=epochcount)#problem
+test_loss, test_acc = model_C.evaluate(testpose_C, labels_test)
+print("CNN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
+
+############################
+### Architecture #3 RNN ####
+############################
+
+#RNN
+inputs_RNN = KL.Input(shape=shapedim)
+x = KL.SimpleRNN(512, activation="sigmoid")(inputs_RNN)
+outputs_RNN = KL.Dense(512, activation="softmax")(x)
+model_RNN = tf.keras.models.Model(inputs_RNN, outputs_RNN)
+model_RNN.summary()
+model_RNN.compile(optimizer = "adam", loss="sparse_categorical_crossentropy", metrics =["acc"])
+model_RNN.fit(trainpose,labels_train, epochs=epochcount)#problem
+test_loss, test_acc = model_RNN.evaluate(testpose, labels_test)
+print("RRN Architecture's Acc%: {} for {} epochs".format(test_acc,epochcount))
+
+
+
+
+
+### MNIST
+########################################################
+
+############################
+### Architecture #1 CNN ####
+############################
+
+# example of loading the mnist dataset
+from keras.datasets import mnist
+from matplotlib import pyplot
+# load dataset
+(trainX, trainy), (testX, testy) = mnist.load_data()
+# summarize loaded dataset
+print('Train: X=%s, y=%s' % (trainX.shape, trainy.shape))
+print('Test: X=%s, y=%s' % (testX.shape, testy.shape))
+# plot first few images
+for i in range(9):
+    # define subplot
+    pyplot.subplot(330 + 1 + i)
+    # plot raw pixel data
+    pyplot.imshow(trainX[i], cmap=pyplot.get_cmap('gray'))
+# show the figure
+pyplot.show()
+
+# record model performance on a validation dataset during training
+history = model.fit(..., validation_data=(valX, valY))
+
+# example of k-fold cv for a neural net
+data = ...
+# prepare cross validation
+kfold = KFold(5, shuffle=True, random_state=1)
+# enumerate splits
+for train_ix, test_ix in kfold.split(data):
+        model = ...
+    ...
+    
+
+# load dataset
+(trainX, trainY), (testX, testY) = mnist.load_data()
+# reshape dataset to have a single channel
+trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+testX = testX.reshape((testX.shape[0], 28, 28, 1))
+# load dataset
+(trainX, trainY), (testX, testY) = mnist.load_data()
+# reshape dataset to have a single channel
+trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+testX = testX.reshape((testX.shape[0], 28, 28, 1))
+
+
+# one hot encode target values
+trainY = to_categorical(trainY)
+testY = to_categorical(testY)
+
+# one hot encode target values
+trainY = to_categorical(trainY)
+testY = to_categorical(testY)
+
+
+# load train and test dataset
+def load_dataset():
+    # load dataset
+    (trainX, trainY), (testX, testY) = mnist.load_data()
+    # reshape dataset to have a single channel
+    trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+    testX = testX.reshape((testX.shape[0], 28, 28, 1))
+    # one hot encode target values
+    trainY = to_categorical(trainY)
+    testY = to_categorical(testY)
+    return trainX, trainY, testX, testY
+
+
+# convert from integers to floats
+train_norm = train.astype('float32')
+test_norm = test.astype('float32')
+# normalize to range 0-1
+train_norm = train_norm / 255.0
+test_norm = test_norm / 255.0
+
+# scale pixels
+def prep_pixels(train, test):
+    # convert from integers to floats
+    train_norm = train.astype('float32')
+    test_norm = test.astype('float32')
+    # normalize to range 0-1
+    train_norm = train_norm / 255.0
+    test_norm = test_norm / 255.0
+    # return normalized images
+    return train_norm, test_norm
+
+
+# define cnn model
+def define_model():
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Flatten())
+    model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
+    model.add(Dense(10, activation='softmax'))
+    # compile model
+    opt = SGD(lr=0.01, momentum=0.9)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+# define cnn model
+def define_model():
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Flatten())
+    model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
+    model.add(Dense(10, activation='softmax'))
+    # compile model
+    opt = SGD(lr=0.01, momentum=0.9)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+
+# evaluate a model using k-fold cross-validation
+def evaluate_model(dataX, dataY, n_folds=5):
+    scores, histories = list(), list()
+    # prepare cross validation
+    kfold = KFold(n_folds, shuffle=True, random_state=1)
+    # enumerate splits
+    for train_ix, test_ix in kfold.split(dataX):
+        # define model
+        model = define_model()
+        # select rows for train and test
+        trainX, trainY, testX, testY = dataX[train_ix], dataY[train_ix], dataX[test_ix], dataY[test_ix]
+        # fit model
+        history = model.fit(trainX, trainY, epochs=10, batch_size=32, validation_data=(testX, testY), verbose=0)
+        # evaluate model
+        _, acc = model.evaluate(testX, testY, verbose=0)
+        print('> %.3f' % (acc * 100.0))
+        # stores scores
+        scores.append(acc)
+        histories.append(history)
+    return scores, histories
+
+
+# evaluate a model using k-fold cross-validation
+def evaluate_model(dataX, dataY, n_folds=5):
+    scores, histories = list(), list()
+    # prepare cross validation
+    kfold = KFold(n_folds, shuffle=True, random_state=1)
+    # enumerate splits
+    for train_ix, test_ix in kfold.split(dataX):
+        # define model
+        model = define_model()
+        # select rows for train and test
+        trainX, trainY, testX, testY = dataX[train_ix], dataY[train_ix], dataX[test_ix], dataY[test_ix]
+        # fit model
+        history = model.fit(trainX, trainY, epochs=10, batch_size=32, validation_data=(testX, testY), verbose=0)
+        # evaluate model
+        _, acc = model.evaluate(testX, testY, verbose=0)
+        print('> %.3f' % (acc * 100.0))
+        # stores scores
+        scores.append(acc)
+        histories.append(history)
+    return scores, histories
+
+
+# plot diagnostic learning curves
+def summarize_diagnostics(histories):
+    for i in range(len(histories)):
+        # plot loss
+        pyplot.subplot(2, 1, 1)
+        pyplot.title('Cross Entropy Loss')
+        pyplot.plot(histories[i].history['loss'], color='blue', label='train')
+        pyplot.plot(histories[i].history['val_loss'], color='orange', label='test')
+        # plot accuracy
+        pyplot.subplot(2, 1, 2)
+        pyplot.title('Classification Accuracy')
+        pyplot.plot(histories[i].history['accuracy'], color='blue', label='train')
+        pyplot.plot(histories[i].history['val_accuracy'], color='orange', label='test')
+    pyplot.show()
+
+# plot diagnostic learning curves
+def summarize_diagnostics(histories):
+    for i in range(len(histories)):
+        # plot loss
+        pyplot.subplot(2, 1, 1)
+        pyplot.title('Cross Entropy Loss')
+        pyplot.plot(histories[i].history['loss'], color='blue', label='train')
+        pyplot.plot(histories[i].history['val_loss'], color='orange', label='test')
+        # plot accuracy
+        pyplot.subplot(2, 1, 2)
+        pyplot.title('Classification Accuracy')
+        pyplot.plot(histories[i].history['accuracy'], color='blue', label='train')
+        pyplot.plot(histories[i].history['val_accuracy'], color='orange', label='test')
+    pyplot.show()
+    
+
+
+# summarize model performance
+def summarize_performance(scores):
+    # print summary
+    print('Accuracy: mean=%.3f std=%.3f, n=%d' % (mean(scores)*100, std(scores)*100, len(scores)))
+    # box and whisker plots of results
+    pyplot.boxplot(scores)
+    pyplot.show()
+
+
+# summarize model performance
+def summarize_performance(scores):
+    # print summary
+    print('Accuracy: mean=%.3f std=%.3f, n=%d' % (mean(scores)*100, std(scores)*100, len(scores)))
+    # box and whisker plots of results
+    pyplot.boxplot(scores)
+    pyplot.show()
+    
+
+# run the test harness for evaluating a model
+def run_test_harness():
+    # load dataset
+    trainX, trainY, testX, testY = load_dataset()
+    # prepare pixel data
+    trainX, testX = prep_pixels(trainX, testX)
+    # evaluate model
+    scores, histories = evaluate_model(trainX, trainY)
+    # learning curves
+    summarize_diagnostics(histories)
+    # summarize estimated performance
+
+
+# run the test harness for evaluating a model
+def run_test_harness():
+    # load dataset
+    trainX, trainY, testX, testY = load_dataset()
+    # prepare pixel data
+    trainX, testX = prep_pixels(trainX, testX)
+    # evaluate model
+    scores, histories = evaluate_model(trainX, trainY)
+    # learning curves
+    summarize_diagnostics(histories)
+    # summarize estimated performance
+    summarize_performance(scores)
+
+    # baseline cnn model for mnist
+from numpy import mean
+from numpy import std
+from matplotlib import pyplot
+from sklearn.model_selection import KFold
+from keras.datasets import mnist
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.optimizers import SGD
+ 
+# load train and test dataset
+def load_dataset():
+    # load dataset
+    (trainX, trainY), (testX, testY) = mnist.load_data()
+    # reshape dataset to have a single channel
+    trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
+    testX = testX.reshape((testX.shape[0], 28, 28, 1))
+    # one hot encode target values
+    trainY = to_categorical(trainY)
+    testY = to_categorical(testY)
+    return trainX, trainY, testX, testY
+ 
+# scale pixels
+def prep_pixels(train, test):
+    # convert from integers to floats
+    train_norm = train.astype('float32')
+    test_norm = test.astype('float32')
+    # normalize to range 0-1
+    train_norm = train_norm / 255.0
+    test_norm = test_norm / 255.0
+    # return normalized images
+    return train_norm, test_norm
+ 
+# define cnn model
+def define_model():
+    model = Sequential()
+    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Flatten())
+    model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
+    model.add(Dense(10, activation='softmax'))
+    # compile model
+    opt = SGD(lr=0.01, momentum=0.9)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+ 
+# evaluate a model using k-fold cross-validation
+def evaluate_model(dataX, dataY, n_folds=5):
+    scores, histories = list(), list()
+    # prepare cross validation
+    kfold = KFold(n_folds, shuffle=True, random_state=1)
+    # enumerate splits
+    for train_ix, test_ix in kfold.split(dataX):
+        # define model
+        model = define_model()
+        # select rows for train and test
+        trainX, trainY, testX, testY = dataX[train_ix], dataY[train_ix], dataX[test_ix], dataY[test_ix]
+        # fit model
+        history = model.fit(trainX, trainY, epochs=10, batch_size=32, validation_data=(testX, testY), verbose=0)
+        # evaluate model
+        _, acc = model.evaluate(testX, testY, verbose=0)
+        print('> %.3f' % (acc * 100.0))
+        # stores scores
+        scores.append(acc)
+        histories.append(history)
+    return scores, histories
+ 
+# plot diagnostic learning curves
+def summarize_diagnostics(histories):
+    for i in range(len(histories)):
+        # plot loss
+        pyplot.subplot(2, 1, 1)
+        pyplot.title('Cross Entropy Loss')
+        pyplot.plot(histories[i].history['loss'], color='blue', label='train')
+        pyplot.plot(histories[i].history['val_loss'], color='orange', label='test')
+        # plot accuracy
+        pyplot.subplot(2, 1, 2)
+        pyplot.title('Classification Accuracy')
+        pyplot.plot(histories[i].history['accuracy'], color='blue', label='train')
+        pyplot.plot(histories[i].history['val_accuracy'], color='orange', label='test')
+    pyplot.show()
+ 
+# summarize model performance
+def summarize_performance(scores):
+    # print summary
+    print('Accuracy: mean=%.3f std=%.3f, n=%d' % (mean(scores)*100, std(scores)*100, len(scores)))
+    # box and whisker plots of results
+    pyplot.boxplot(scores)
+    pyplot.show()
+ 
+# run the test harness for evaluating a model
+def run_test_harness():
+    # load dataset
+    trainX, trainY, testX, testY = load_dataset()
+    # prepare pixel data
+    trainX, testX = prep_pixels(trainX, testX)
+    # evaluate model
+    scores, histories = evaluate_model(trainX, trainY)
+    # learning curves
+    summarize_diagnostics(histories)
+    # summarize estimated performance
+    summarize_performance(scores)
+ 
+# entry point, run the test harness
+run_test_harness()
+
+
+########################################
+### Architecture #2 Feed-forward NN ####
+########################################
+import keras
+import numpy as np
+import pandas as pd 
+data=pd.read_csv("../input/train.csv")
+datat=pd.read_csv("../input/test.csv")
+
+X_train=data.iloc[:,1:785]
+y_train=data.iloc[:,0]
+yt=keras.utils.to_categorical(y_train,10)
+X_test=datat.iloc[:,0:785]
+X_test
+
+from keras import Sequential
+from keras.layers import Dense
+classifier = Sequential()
+#First Hidden Layer
+classifier.add(Dense(32, activation='sigmoid', kernel_initializer='random_normal', input_dim=784))
+#Output Layer
+classifier.add(Dense(10, activation='softmax', kernel_initializer='random_normal'))
+#Compiling the neural network
+classifier.compile(optimizer ='adam',loss='binary_crossentropy', metrics =['accuracy'])
+classifier.fit(X_train,yt, batch_size=10, epochs=20)
+
+
+#################################################
+### Architecture #3 Recurrent Neural Network ####
+#################################################
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets("MNIST_data/")
+
+# hyperparameters
+n_neurons = 128
+learning_rate = 0.001
+batch_size = 128
+n_epochs = 10
+# parameters
+n_steps = 28 # 28 rows
+n_inputs = 28 # 28 cols
+n_outputs = 10 # 10 classes
+# build a rnn model
+X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
+y = tf.placeholder(tf.int32, [None])
+cell = tf.nn.rnn_cell.BasicRNNCell(num_units=n_neurons)
+output, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
+logits = tf.layers.dense(state, n_outputs)
+cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)
+loss = tf.reduce_mean(cross_entropy)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+prediction = tf.nn.in_top_k(logits, y, 1)
+accuracy = tf.reduce_mean(tf.cast(prediction, tf.float32))
+
+# input data
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets(“MNIST_data/”)
+X_test = mnist.test.images # X_test shape: [num_test, 28*28]
+X_test = X_test.reshape([-1, n_steps, n_inputs])
+y_test = mnist.test.labels
+
+# initialize the variables
+init = tf.global_variables_initializer()
+# train the model
+with tf.Session() as sess:
+    sess.run(init)
+    n_batches = mnist.train.num_examples // batch_size
+    for epoch in range(n_epochs):
+        for batch in range(n_batches):
+            X_train, y_train = mnist.train.next_batch(batch_size)
+            X_train = X_train.reshape([-1, n_steps, n_inputs])
+            sess.run(optimizer, feed_dict={X: X_train, y: y_train})
+        loss_train, acc_train = sess.run(
+            [loss, accuracy], feed_dict={X: X_train, y: y_train})
+        print('Epoch: {}, Train Loss: {:.3f}, Train Acc: {:.3f}'.format(
+            epoch + 1, loss_train, acc_train))
+    loss_test, acc_test = sess.run(
+        [loss, accuracy], feed_dict={X: X_test, y: y_test})
+    print('Test Loss: {:.3f}, Test Acc: {:.3f}'.format(loss_test, acc_test))'''
