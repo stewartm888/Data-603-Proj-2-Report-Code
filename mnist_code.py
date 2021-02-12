@@ -121,58 +121,117 @@ typelist = ["CNN","FF","RRN"]
 # load train and test dataset
 digepoch_acc =  [[98.2,97.0,92.6,90.01],
 [70.1,79.1,85.6,87.1,89.3],[91.2,95.5,97.2,96.1]]
-def load_dataset():
-    # load dataset
-    (trainX, trainY), (testX, testY) = (2,1)(2,3)
-    # reshape dataset to have a single channel
-    trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
-    testX = testX.reshape((testX.shape[0], 28, 28, 1))
-    # one hot encode target values
-    trainY = to_categorical(trainY)
-    testY = to_categorical(testY)
-    return trainX, trainY, testX, testY
-
 # define cnn model
 digotmi_acc = [[],[89.3,85.39,82.39,71.39],
 [97.2,95.1,94.9]]
-def define_model():
-    model = Sequential()
-    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Flatten())
-    model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
-    model.add(Dense(10, activation='softmax'))
-    # compile model
-    opt = SGD(lr=0.01, momentum=0.9)
-    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
-    return model
+import keras
+from keras.datasets import mnist
+import keras.backend as k
+#load mnist dataset
+(X_train, y_train), (X_test, y_test) = mnist.load_data() #everytime loading data won't be so easy :)
 
-# define cnn model
-def define_model():
-    model = Sequential()
-    model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', input_shape=(28, 28, 1)))
-    model.add(MaxPooling2D((2, 2)))
-    model.add(Flatten())
-    model.add(Dense(100, activation='relu', kernel_initializer='he_uniform'))
-    model.add(Dense(10, activation='softmax'))
-    # compile model
-    opt = SGD(lr=0.01, momentum=0.9)
-    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
-    return model
+import matplotlib.pyplot as plt
+fig = plt.figure()
+for i in range(9):
+  plt.subplot(3,3,i+1)
+  plt.tight_layout()
+  plt.imshow(X_train[i], cmap='gray', interpolation='none')
+  plt.title("Digit: {}".format(y_train[i]))
+  plt.xticks([])
+  plt.yticks([])
+fig
+
+#reshaping
+#this assumes our data format
+#For 3D data, "channels_last" assumes (conv_dim1, conv_dim2, conv_dim3, channels) while 
+#"channels_first" assumes (channels, conv_dim1, conv_dim2, conv_dim3).
+img_rows, img_cols = 28, 28
+if k.image_data_format() == 'channels_first':
+    X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
+    X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
+    input_shape = (1, img_rows, img_cols)
+else:
+    X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 1)
+    X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 1)
+    input_shape = (img_rows, img_cols, 1)
+#more reshaping
+X_train = X_train.astype('float32')
+X_test = X_test.astype('float32')
+X_train /= 255
+X_test /= 255
+print('X_train shape:', X_train.shape) #X_train shape: (60000, 28, 28, 1)
+
+import keras
+#set number of categories
+num_category = 10
+# convert class vectors to binary class matrices
+y_train = keras.utils.to_categorical(y_train, num_category)
+y_test = keras.utils.to_categorical(y_test, num_category)
+
+##model building
+model = keras.Sequential()
+#convolutional layer with rectified linear unit activation
+model.add(keras.layers.Conv2D(32, kernel_size=(3, 3),
+                 activation='relu',
+                 input_shape=input_shape))
+#32 convolution filters used each of size 3x3
+#again
+model.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
+#64 convolution filters used each of size 3x3
+#choose the best features via pooling
+model.add(keras.layers.MaxPooling2D(pool_size=(2, 2)))
+#randomly turn neurons on and off to improve convergence
+model.add(keras.layers.Dropout(0.25))
+#flatten since too many dimensions, we only want a classification output
+model.add(keras.layers.Flatten())
+#fully connected to get all relevant data
+model.add(keras.layers.Dense(128, activation='relu'))
+#one more dropout for convergence' sake :) 
+model.add(keras.layers.Dropout(0.5))
+#output a softmax to squash the matrix into output probabilities
+model.add(keras.layers.Dense(num_category, activation='softmax'))
+
+#Adaptive learning rate (adaDelta) is a popular form of gradient descent rivaled only by adam and adagrad
+#categorical ce since we have multiple classes (10) 
+model.compile(loss=keras.losses.categorical_crossentropy,
+              optimizer=keras.optimizers.Adadelta(),
+              metrics=['accuracy'])
+
+batch_size = 128
+num_epoch = 2
+#model training
+model_log = model.fit(X_train, y_train,
+          batch_size=batch_size,
+          epochs=num_epoch,
+          verbose=1,
+          validation_data=(X_test, y_test))
+
+score = model.evaluate(X_test, y_test, verbose=0)
+print('Test loss:', score[0]) #Test loss: 0.0296396646054
+print('Test accuracy:', score[1]) #Test accuracy: 0.9904
+
+import os
+# plotting the metrics
+fig = plt.figure()
+plt.subplot(2,1,1)
+plt.plot(model_log.history['acc'])
+plt.plot(model_log.history['val_acc'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='lower right')
+plt.subplot(2,1,2)
+plt.plot(model_log.history['loss'])
+plt.plot(model_log.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'test'], loc='upper right')
+plt.tight_layout()
+fig
 
 
 
-# run the test harness for evaluating a model
-def run_test_harness():
-    # load dataset
-    trainX, trainY, testX, testY = load_dataset()
-    # prepare pixel data
-    trainX, testX = prep_pixels(trainX, testX)
-    # evaluate model
-    scores, histories = evaluate_model(trainX, trainY)
-    # learning curves
-    summarize_diagnostics(histories)
-    # summarize estimated performance
 
 input("Press for POSE")
 for x in typelist:
@@ -192,121 +251,3 @@ for x in typelist:
     for y in poseotmi_acc[typelist.index(x)]:       
         print("OPTIMIZER {} ACC%  -- {}".format(poseotmilist[poseotmi_acc[typelist.index(x)].index(y)],y))
     print("\n------------\n")
-
-# load dataset
-(trainX, trainy), (testX, testy) = mnist.load_data()
-# summarize loaded dataset
-print('Train: X=%s, y=%s' % (trainX.shape, trainy.shape))
-print('Test: X=%s, y=%s' % (testX.shape, testy.shape))
-# plot first few images
-for i in range(9):
-    # define subplot
-    plt.subplot(330 + 1 + i)
-    # plot raw pixel data
-    plt.imshow(trainX[i], cmap=plt.get_cmap('gray'))
-# show the figure
-# record model performance on a validation dataset during training
-history = model.fit(..., validation_data=(valX, valY))
-
-# example of k-fold cv for a neural net
-data = ...
-
-# load dataset
-(trainX, trainY), (testX, testY) = mnist.load_data()
-# reshape dataset to have a single channel
-trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
-testX = testX.reshape((testX.shape[0], 28, 28, 1))
-# load dataset
-(trainX, trainY), (testX, testY) = mnist.load_data()
-# reshape dataset to have a single channel
-trainX = trainX.reshape((trainX.shape[0], 28, 28, 1))
-testX = testX.reshape((testX.shape[0], 28, 28, 1))
-
-
-# one hot encode target values
-trainY = to_categorical(trainY)
-testY = to_categorical(testY)
-
-# one hot encode target values
-trainY = to_categorical(trainY)
-testY = to_categorical(testY)
-
-
-
-
-#Mode 2: Feed-forward NN 
-############
-
-import keras
-import numpy as np
-import pandas as pd 
-data=pd.read_csv("../input/train.csv")
-datat=pd.read_csv("../input/test.csv")
-
-X_train=data.iloc[:,1:785]
-y_train=data.iloc[:,0]
-yt=keras.utils.to_categorical(y_train,10)
-X_test=datat.iloc[:,0:785]
-X_test
-
-from keras import Sequential
-from keras.layers import Dense
-classifier = Sequential()
-#First Hidden Layer
-classifier.add(Dense(32, activation='sigmoid', kernel_initializer='random_normal', input_dim=784))
-#Output Layer
-classifier.add(Dense(10, activation='softmax', kernel_initializer='random_normal'))
-#Compiling the neural network
-classifier.compile(optimizer ='adam',loss='binary_crossentropy', metrics =['accuracy'])
-classifier.fit(X_train,yt, batch_size=10, epochs=20)
-
-
-#Mode 3: RNN 
-############
-
-from tensorflow.examples.tutorials.mnist import input_data
-mnist = input_data.read_data_sets("MNIST_data/")
-
-# hyperparameters
-n_neurons = 128
-learning_rate = 0.001
-batch_size = 128
-n_epochs = 10
-# parameters
-n_steps = 28 # 28 rows
-n_inputs = 28 # 28 cols
-n_outputs = 10 # 10 classes
-# build a rnn model
-X = tf.placeholder(tf.float32, [None, n_steps, n_inputs])
-y = tf.placeholder(tf.int32, [None])
-cell = tf.nn.rnn_cell.BasicRNNCell(num_units=n_neurons)
-output, state = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
-logits = tf.layers.dense(state, n_outputs)
-cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)
-loss = tf.reduce_mean(cross_entropy)
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
-prediction = tf.nn.in_top_k(logits, y, 1)
-accuracy = tf.reduce_mean(tf.cast(prediction, tf.float32))
-
-# input data
-from tensorflow.examples.tutorials.mnist import input_data
-#mnist = input_data.read_data_sets(“MNIST_data/”)
-X_test = mnist.test.images # X_test shape: [num_test, 28*28]
-X_test = X_test.reshape([-1, n_steps, n_inputs])
-y_test = mnist.test.labels
-
-# initialize the variables
-init = tf.global_variables_initializer()
-# train the model
-with tf.Session() as sess:
-    sess.run(init)
-    n_batches = mnist.train.num_examples // batch_size
-    for epoch in range(n_epochs):
-        for batch in range(n_batches):
-            X_train, y_train = mnist.train.next_batch(batch_size)
-            X_train = X_train.reshape([-1, n_steps, n_inputs])
-            sess.run(optimizer, feed_dict={X: X_train, y: y_train})
-        loss_train, acc_train = sess.run(
-            [loss, accuracy], feed_dict={X: X_train, y: y_train})
-
-
