@@ -116,14 +116,11 @@ epochlist = [2,5,10,15,20]
 otmilist = ["ADAM","STOC_GRAD","ADAGRAD","RMSPROP"]
 typelist = ["CNN","FF","RRN"]
 
-#Mode 1: CNN 
-############
-# load train and test dataset
-digepoch_acc =  [[98.2,97.0,92.6,90.01],
-[70.1,79.1,85.6,87.1,89.3],[91.2,95.5,97.2,96.1]]
-# define cnn model
-digotmi_acc = [[],[89.3,85.39,82.39,71.39],
-[97.2,95.1,94.9]]
+
+##CNN
+###################
+###################
+
 import keras
 from keras.datasets import mnist
 import keras.backend as k
@@ -141,10 +138,7 @@ for i in range(9):
   plt.yticks([])
 fig
 
-#reshaping
-#this assumes our data format
-#For 3D data, "channels_last" assumes (conv_dim1, conv_dim2, conv_dim3, channels) while 
-#"channels_first" assumes (channels, conv_dim1, conv_dim2, conv_dim3).
+
 img_rows, img_cols = 28, 28
 if k.image_data_format() == 'channels_first':
     X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
@@ -170,7 +164,8 @@ y_test = keras.utils.to_categorical(y_test, num_category)
 
 ##model building
 model = keras.Sequential()
-#convolutional layer with rectified linear unit activation
+digotmi_acc = [[],[89.3,85.39,82.39,71.39],
+[97.2,95.1,94.9]]
 model.add(keras.layers.Conv2D(32, kernel_size=(3, 3),
                  activation='relu',
                  input_shape=input_shape))
@@ -231,6 +226,244 @@ plt.tight_layout()
 fig
 
 
+### Feed Forward
+#######################
+from sklearn.datasets import fetch_openml
+from keras.utils.np_utils import to_categorical
+import numpy as np
+from sklearn.model_selection import train_test_split
+import time
+
+x, y = fetch_openml('mnist_784', version=1, return_X_y=True)
+x = (x/255).astype('float32')
+digepoch_acc =  [[98.2,97.0,92.6,90.01],
+[70.1,79.1,85.6,87.1,89.3],[91.2,95.5,97.2,96.1]]
+y = to_categorical(y)
+
+x_train, x_val, y_train, y_val = train_test_split(x, y, test_size=0.15, random_state=42)
+
+class DeepNeuralNetwork():
+    def __init__(self, sizes, epochs=10, l_rate=0.001):
+        self.sizes = sizes
+        self.epochs = epochs
+        self.l_rate = l_rate
+
+        self.params = self.initialization()
+
+    def sigmoid(self, x, derivative=False):
+        if derivative:
+            return (np.exp(-x))/((np.exp(-x)+1)**2)
+        return 1/(1 + np.exp(-x))
+
+    def softmax(self, x, derivative=False):
+        # Numerically stable with large exponentials
+        exps = np.exp(x - x.max())
+        if derivative:
+            return exps / np.sum(exps, axis=0) * (1 - exps / np.sum(exps, axis=0))
+        return exps / np.sum(exps, axis=0)
+
+    def initialization(self):
+        # number of nodes in each layer
+        input_layer=self.sizes[0]
+        hidden_1=self.sizes[1]
+        hidden_2=self.sizes[2]
+        output_layer=self.sizes[3]
+
+        params = {
+            'W1':np.random.randn(hidden_1, input_layer) * np.sqrt(1. / hidden_1),
+            'W2':np.random.randn(hidden_2, hidden_1) * np.sqrt(1. / hidden_2),
+            'W3':np.random.randn(output_layer, hidden_2) * np.sqrt(1. / output_layer)
+        }
+
+        return params
+
+    def forward_pass(self, x_train):
+        params = self.params
+
+        params['A0'] = x_train
+
+        # input layer to hidden layer 1
+        params['Z1'] = np.dot(params["W1"], params['A0'])
+        params['A1'] = self.sigmoid(params['Z1'])
+
+        # hidden layer 1 to hidden layer 2
+        params['Z2'] = np.dot(params["W2"], params['A1'])
+        params['A2'] = self.sigmoid(params['Z2'])
+
+        # hidden layer 2 to output layer
+        params['Z3'] = np.dot(params["W3"], params['A2'])
+        params['A3'] = self.softmax(params['Z3'])
+
+        return params['A3']
+
+    def backward_pass(self, y_train, output):
+
+        params = self.params
+        change_w = {}
+
+        # Calculate W3 update
+        error = 2 * (output - y_train) / output.shape[0] * self.softmax(params['Z3'], derivative=True)
+        change_w['W3'] = np.outer(error, params['A2'])
+
+        # Calculate W2 update
+        error = np.dot(params['W3'].T, error) * self.sigmoid(params['Z2'], derivative=True)
+        change_w['W2'] = np.outer(error, params['A1'])
+
+        # Calculate W1 update
+        error = np.dot(params['W2'].T, error) * self.sigmoid(params['Z1'], derivative=True)
+        change_w['W1'] = np.outer(error, params['A0'])
+
+        return change_w
+
+    def update_network_parameters(self, changes_to_w):
+
+        for key, value in changes_to_w.items():
+            self.params[key] -= self.l_rate * value
+
+    def compute_accuracy(self, x_val, y_val):
+
+        predictions = []
+
+        for x, y in zip(x_val, y_val):
+            output = self.forward_pass(x)
+            pred = np.argmax(output)
+            predictions.append(pred == np.argmax(y))
+        
+        return np.mean(predictions)
+
+    def train(self, x_train, y_train, x_val, y_val):
+        start_time = time.time()
+        for iteration in range(self.epochs):
+            for x,y in zip(x_train, y_train):
+                output = self.forward_pass(x)
+                changes_to_w = self.backward_pass(y, output)
+                self.update_network_parameters(changes_to_w)
+            
+            accuracy = self.compute_accuracy(x_val, y_val)
+            print('Epoch: {0}, Time Spent: {1:.2f}s, Accuracy: {2:.2f}%'.format(
+                iteration+1, time.time() - start_time, accuracy * 100
+            ))
+
+dnn = DeepNeuralNetwork(sizes=[784, 128, 64, 10])
+dnn.train(x_train, y_train, x_val, y_val)
+
+import torch
+from torchvision import datasets, transforms
+
+transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,))
+            ])
+
+train_loader = torch.utils.data.DataLoader(
+    datasets.MNIST('data', train=True, download=True, transform=transform))
+
+test_loader = torch.utils.data.DataLoader(
+    datasets.MNIST('data', train=False, transform=transform))
+
+import time
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+
+class Net(nn.Module):
+    def __init__(self, epochs=10):
+        super(Net, self).__init__()
+        self.linear1 = nn.Linear(784, 128)
+        self.linear2 = nn.Linear(128, 64)
+        self.linear3 = nn.Linear(64, 10)
+
+        self.epochs = epochs
+
+    def forward_pass(self, x):
+        x = self.linear1(x)
+        x = torch.sigmoid(x)
+        x = self.linear2(x)
+        x = torch.sigmoid(x)
+        x = self.linear3(x)
+        x = torch.softmax(x, dim=0)
+        return x
+    
+    def one_hot_encode(self, y):
+        encoded = torch.zeros([10], dtype=torch.float64)
+        encoded[y[0]] = 1.
+        return encoded
+
+    def train(self, train_loader, optimizer, criterion):
+        start_time = time.time()
+        loss = None
+
+        for iteration in range(self.epochs):
+            for x,y in train_loader:
+                y = self.one_hot_encode(y)
+                optimizer.zero_grad()
+                output = self.forward_pass(torch.flatten(x))
+                loss = criterion(output, y)
+                loss.backward()
+                optimizer.step()
+
+            print('Epoch: {0}, Time Spent: {1:.2f}s, Loss: {2}'.format(
+                iteration+1, time.time() - start_time, loss
+            ))
+
+model = Net()
+
+optimizer = optim.SGD(model.parameters(), lr=0.001)
+criterion = nn.BCEWithLogitsLoss()
+
+model.train(train_loader, optimizer, criterion)
+
+
+### RNN
+##################
+
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+
+batch_size = 64
+input_dim = 28
+
+units = 64
+output_size = 10  # labels are from 0 to 9
+
+def build_model(allow_cudnn_kernel=True):
+    if allow_cudnn_kernel:
+        # The LSTM layer with default options uses CuDNN.
+        lstm_layer = keras.layers.LSTM(units, input_shape=(None, input_dim))
+    else:
+        # Wrapping a LSTMCell in a RNN layer will not use CuDNN.
+        lstm_layer = keras.layers.RNN(
+            keras.layers.LSTMCell(units), input_shape=(None, input_dim)
+        )
+    model = keras.models.Sequential(
+        [
+            lstm_layer,
+            keras.layers.BatchNormalization(),
+            keras.layers.Dense(output_size),
+        ]
+    )
+    return model
+
+mnist = keras.datasets.mnist
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0
+sample, sample_label = x_train[0], y_train[0]
+
+model = build_model(allow_cudnn_kernel=True)
+
+model.compile(
+    loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    optimizer="sgd",
+    metrics=["accuracy"],
+)
+
+
+model.fit(
+    x_train, y_train, validation_data=(x_test, y_test), batch_size=batch_size, epochs=10
+)
 
 
 input("Press for POSE")
