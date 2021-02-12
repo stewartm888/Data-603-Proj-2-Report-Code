@@ -9,6 +9,14 @@ import tensorflow.keras.layers as KL
 import inflect
 import pandas as pd
 
+
+# ----------------- MNIST  ----------------- 
+########################################################
+########################################################
+
+
+
+
 typelist = ["CNN","FF","RRN"]
 
 poseepochlist = [5,10,20,50]
