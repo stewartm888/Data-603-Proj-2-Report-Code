@@ -8,14 +8,22 @@ import tensorflow as tf
 import tensorflow.keras.layers as KL
 import inflect
 import pandas as pd
+import keras
+from keras.datasets import mnist
+import keras.backend as k
+import os
+from tensorflow import keras
+from tensorflow.keras import layers
+import time
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+
 
 
 # ----------------- POSE  ----------------- 
 ########################################################
 ########################################################
-
-
-
 
 typelist = ["CNN","FF","RRN"]
 
@@ -129,23 +137,11 @@ typelist = ["CNN","FF","RRN"]
 ###################
 ###################
 
-import keras
-from keras.datasets import mnist
-import keras.backend as k
-#load mnist dataset
-(X_train, y_train), (X_test, y_test) = mnist.load_data() #everytime loading data won't be so easy :)
+
+#get dataset
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
 
 import matplotlib.pyplot as plt
-fig = plt.figure()
-for i in range(9):
-  plt.subplot(3,3,i+1)
-  plt.tight_layout()
-  plt.imshow(X_train[i], cmap='gray', interpolation='none')
-  plt.title("Digit: {}".format(y_train[i]))
-  plt.xticks([])
-  plt.yticks([])
-fig
-
 
 img_rows, img_cols = 28, 28
 if k.image_data_format() == 'channels_first':
@@ -156,17 +152,14 @@ else:
     X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 1)
     X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 1)
     input_shape = (img_rows, img_cols, 1)
-#more reshaping
+#re-shaping
 X_train = X_train.astype('float32')
 X_test = X_test.astype('float32')
 X_train /= 255
 X_test /= 255
-print('X_train shape:', X_train.shape) #X_train shape: (60000, 28, 28, 1)
+print('X_train shape:', X_train.shape)
 
-import keras
-#set number of categories
 num_category = 10
-# convert class vectors to binary class matrices
 y_train = keras.utils.to_categorical(y_train, num_category)
 y_test = keras.utils.to_categorical(y_test, num_category)
 
@@ -213,8 +206,6 @@ score = model.evaluate(X_test, y_test, verbose=0)
 print('Test loss:', score[0]) #Test loss: 0.0296396646054
 print('Test accuracy:', score[1]) #Test accuracy: 0.9904
 
-import os
-# plotting the metrics
 fig = plt.figure()
 plt.subplot(2,1,1)
 plt.plot(model_log.history['acc'])
@@ -369,11 +360,6 @@ train_loader = torch.utils.data.DataLoader(
 test_loader = torch.utils.data.DataLoader(
     datasets.MNIST('data', train=False, transform=transform))
 
-import time
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-
 class Net(nn.Module):
     def __init__(self, epochs=10):
         super(Net, self).__init__()
@@ -425,11 +411,6 @@ model.train(train_loader, optimizer, criterion)
 ### RNN
 ##################
 
-import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-
 batch_size = 64
 input_dim = 28
 
@@ -468,11 +449,9 @@ model.compile(
     metrics=["accuracy"],
 )
 
-
 model.fit(
     x_train, y_train, validation_data=(x_test, y_test), batch_size=batch_size, epochs=10
 )
-
 
 input("Press for POSE")
 for x in typelist:
